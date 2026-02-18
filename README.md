@@ -1,1 +1,1 @@
-# fenmo-expense-tracker
+# Fenmo Expense Tracker
