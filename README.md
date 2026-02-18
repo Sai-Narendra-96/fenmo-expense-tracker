@@ -1,107 +1,82 @@
-# 💰 Expense Tracker
+# Expense Tracker
 
-A minimal, full-stack personal expense tracking application built with **FastAPI** (Python) and **React** (Vite).
+A minimal full-stack expense tracking app — FastAPI backend + React frontend.
 
-> **Live App**: [https://expense-tracker-surya.vercel.app](https://expense-tracker-surya.vercel.app)  
-> **API**: [https://expense-tracker-api-xxxx.onrender.com](https://expense-tracker-api-xxxx.onrender.com/health)
+**Live:** https://fenmo-expense-tracker-pink.vercel.app  
+**API:** https://fenmo-expense-tracker-jn5t.onrender.com/health
 
 ---
 
-## Features
+## What It Does
 
-- **Add expenses** with amount, category, description, and date
-- **View all expenses** in a clean, responsive table
-- **Filter by category** to focus on specific spending areas
-- **Sort by date** (newest first) for chronological review
-- **Total amount** displayed dynamically based on current filters
-- **Category breakdown** summary showing spending per category
-- **Idempotent submissions** — safe to retry on network failures or double-clicks
-- **Input validation** on both client and server
-- **Loading and error states** throughout the UI
+- Add expenses (amount, category, description, date)
+- View expenses in a table with running total
+- Filter by category, sort by date (newest first)
+- Category breakdown summary
+- Idempotent POST requests — safe to retry on flaky networks or double-clicks
+- Client-side retry with exponential backoff for 5xx / network errors
+- Input validation on both frontend and backend
 
 ---
 
 ## Tech Stack
 
-| Layer      | Technology         | Why                                                       |
-|------------|--------------------|-----------------------------------------------------------|
-| Backend    | FastAPI (Python)   | Fast, modern, automatic OpenAPI docs, Pydantic validation |
-| Database   | SQLite             | Zero-config, ACID-compliant, ideal for single-server personal tools |
-| Frontend   | React + Vite       | Fast dev experience, component-based, widely understood   |
-| Deployment | Render + Vercel    | Free tier, simple setup, reliable for small apps          |
+| Layer | Tech | Reason |
+|-------|------|--------|
+| Backend | FastAPI + SQLite | Lightweight, auto-generates OpenAPI docs, zero-config DB |
+| Frontend | React + Vite | Fast dev loop, simple component model |
+| Deploy | Render + Vercel | Free tier, easy setup |
 
 ---
 
-## Key Design Decisions
+## Design Decisions
 
-### 1. Money as Integer Cents (Paise)
-Amounts are stored as **integer cents** (paise) in the database to avoid floating-point precision errors that plague money calculations. The API accepts and returns human-readable decimal values (e.g., `150.50`) but converts internally.
+**Money as integer cents (paise):** Stored as integers in SQLite to avoid floating-point rounding. The API accepts/returns decimals (e.g. `150.50`) and converts internally.
 
-### 2. Idempotency for Safe Retries
-Every `POST /expenses` request can include an `idempotency_key`. If the same key is sent twice (e.g., due to a network retry or double-click), the server returns the original response instead of creating a duplicate. This is critical for a tool used in real-world conditions with unreliable networks.
+**Idempotency keys:** The frontend generates a unique key per form submission and attaches it to the POST request. If the same key hits the server twice (retry, double-click), the server returns the original record instead of creating a duplicate.
 
-### 3. SQLite for Persistence
-SQLite is the right tool for a personal finance application:
-- No external service to configure or maintain
-- ACID-compliant transactions out of the box
-- WAL mode enabled for better concurrent read performance
-- Easily portable — the entire database is a single file
-- More than sufficient for personal expense tracking volumes
+**SQLite:** Good fit for a single-user personal tool — ACID transactions, WAL mode for reads, no external services. For multi-instance deploys, I'd swap to Postgres.
 
-### 4. Server-Side Filtering & Sorting
-Filtering and sorting happen on the backend via query parameters rather than purely client-side. This keeps the API contract clean and would scale naturally if the dataset grew beyond what's comfortable to load entirely in the browser.
-
-### 5. Client-Side Retry with Backoff
-The frontend API client includes automatic retry logic with exponential backoff for transient failures (5xx errors, network timeouts). Client errors (4xx) are not retried.
+**Server-side filtering/sorting:** Filtering and sorting happen via query params on the backend, not purely in the browser. Scales better if the dataset grows.
 
 ---
 
-## Trade-offs (Due to Timebox)
+## Trade-offs
 
-- **No authentication**: This is a personal tool; auth would be the first addition for multi-user support.
-- **No pagination**: With a personal expense tracker, the dataset is typically manageable. For larger datasets, cursor-based pagination would be added.
-- **No edit/delete**: Focused on the core acceptance criteria. PATCH and DELETE endpoints would follow the same patterns.
-- **SQLite on Render**: SQLite works well with Render's persistent disk, but for a multi-instance deployment, PostgreSQL would be the right choice.
-- **Basic styling**: Kept intentionally simple and functional per the assignment guidance. No CSS framework — just clean, hand-written CSS.
-
----
-
-## What I Intentionally Did Not Do
-
-- **Over-engineer the frontend**: No state management library (Redux, Zustand) — React's `useState` and `useEffect` are sufficient for this scope.
-- **Add a CSS framework**: Tailwind or Bootstrap would add build complexity for minimal benefit at this scale.
-- **Server-side rendering**: Not needed for a personal tool — a simple SPA is the right fit.
-- **Complex category management**: Categories are predefined in the frontend dropdown. A full CRUD for categories would be a future enhancement.
+- **No auth** — it's a personal tool. Auth would be first priority for multi-user.
+- **No pagination** — fine for personal volumes. Would add cursor-based pagination for larger datasets.
+- **No edit/delete** — focused on core acceptance criteria. PATCH/DELETE would follow the same patterns.
+- **No CSS framework** — kept styling minimal and hand-written per the assignment guidance.
+- **No state management library** — `useState`/`useEffect` are enough at this scope.
 
 ---
 
 ## Project Structure
 
 ```
-expense-tracker/
+fenmo-expense-tracker/
 ├── backend/
-│   ├── main.py              # FastAPI app with endpoints
-│   ├── database.py          # SQLite connection and schema
-│   ├── schemas.py           # Pydantic validation models
-│   ├── requirements.txt     # Python dependencies
+│   ├── main.py            # API endpoints
+│   ├── database.py        # SQLite setup + schema
+│   ├── schemas.py         # Pydantic models
+│   ├── requirements.txt
 │   └── tests/
-│       └── test_api.py      # API integration tests
+│       └── test_api.py
 ├── frontend/
+│   ├── src/
+│   │   ├── App.jsx
+│   │   ├── api.js         # API client with retry logic
+│   │   ├── index.css
+│   │   └── components/
+│   │       ├── ExpenseForm.jsx
+│   │       ├── ExpenseList.jsx
+│   │       ├── ExpenseFilters.jsx
+│   │       └── CategorySummary.jsx
 │   ├── index.html
 │   ├── package.json
-│   ├── vite.config.js
-│   └── src/
-│       ├── App.jsx           # Main app component
-│       ├── api.js            # API client with retry logic
-│       ├── index.css         # Styles
-│       ├── main.jsx          # Entry point
-│       └── components/
-│           ├── ExpenseForm.jsx
-│           ├── ExpenseList.jsx
-│           ├── ExpenseFilters.jsx
-│           └── CategorySummary.jsx
-├── render.yaml              # Render deployment config
-├── .gitignore
+│   └── vite.config.js
+├── render.yaml
+├── vercel.json
 └── README.md
 ```
 
@@ -109,8 +84,7 @@ expense-tracker/
 
 ## Running Locally
 
-### Backend
-
+**Backend:**
 ```bash
 cd backend
 python -m venv venv
@@ -118,23 +92,17 @@ source venv/bin/activate
 pip install -r requirements.txt
 uvicorn main:app --reload --port 8000
 ```
+Docs at http://localhost:8000/docs
 
-API docs available at: `http://localhost:8000/docs`
-
-### Frontend
-
+**Frontend:**
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
+Runs at http://localhost:5173 — proxies API calls to localhost:8000.
 
-Opens at: `http://localhost:5173`
-
-The Vite dev server proxies `/api/*` requests to `http://localhost:8000`.
-
-### Running Tests
-
+**Tests:**
 ```bash
 cd backend
 pytest tests/ -v
@@ -142,45 +110,10 @@ pytest tests/ -v
 
 ---
 
-## API Reference
+## API
 
-### `POST /expenses`
+**POST /expenses** — Create expense. Body: `{ amount, category, description, date, idempotency_key }`. Returns 201.
 
-Create a new expense.
+**GET /expenses** — List expenses. Optional params: `category`, `sort=date_desc`. Returns 200.
 
-**Request Body:**
-```json
-{
-  "amount": 150.50,
-  "category": "Food",
-  "description": "Lunch at cafeteria",
-  "date": "2025-02-17",
-  "idempotency_key": "optional-unique-key"
-}
-```
-
-**Response (201):**
-```json
-{
-  "id": "uuid",
-  "amount": 150.50,
-  "category": "Food",
-  "description": "Lunch at cafeteria",
-  "date": "2025-02-17",
-  "created_at": "2025-02-17T10:30:00"
-}
-```
-
-### `GET /expenses`
-
-List expenses with optional filters.
-
-**Query Parameters:**
-- `category` — Filter by exact category match
-- `sort=date_desc` — Sort by date, newest first
-
-**Response (200):** Array of expense objects.
-
-### `GET /health`
-
-Health check. Returns `{"status": "ok"}`.
+**GET /health** — Returns `{"status": "ok"}`.
