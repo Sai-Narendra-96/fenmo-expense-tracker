@@ -11,6 +11,17 @@ const CATEGORIES = [
   'Other',
 ];
 
+/**
+ * Generate a unique idempotency key for POST requests.
+ * Uses crypto.randomUUID() where available, with a fallback.
+ */
+function generateIdempotencyKey() {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+}
+
 export default function ExpenseForm({ onSubmit, isSubmitting }) {
   const [form, setForm] = useState({
     amount: '',
@@ -52,6 +63,9 @@ export default function ExpenseForm({ onSubmit, isSubmitting }) {
       return;
     }
 
+    // Generate idempotency key ONCE here so double-clicks reuse the same key
+    const idempotencyKey = generateIdempotencyKey();
+
     const expense = {
       amount: parseFloat(parseFloat(form.amount).toFixed(2)),
       category: form.category,
@@ -59,7 +73,7 @@ export default function ExpenseForm({ onSubmit, isSubmitting }) {
       date: form.date,
     };
 
-    const success = await onSubmit(expense);
+    const success = await onSubmit(expense, idempotencyKey);
     if (success) {
       setForm({
         amount: '',

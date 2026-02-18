@@ -12,9 +12,6 @@ import os
 import sys
 import pytest
 
-# Use an in-memory (temp file) test database
-os.environ["DATABASE_PATH"] = ":memory:"
-
 # Ensure backend module is importable
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -22,18 +19,20 @@ from fastapi.testclient import TestClient
 from main import app
 from database import init_db
 
+TEST_DB_PATH = "test_expenses.db"
+
 
 @pytest.fixture(autouse=True)
 def setup_db():
-    """Re-initialize the database before each test."""
-    os.environ["DATABASE_PATH"] = "test_expenses.db"
-    # Remove old test db
-    if os.path.exists("test_expenses.db"):
-        os.remove("test_expenses.db")
+    """Set up a fresh file-based test database for each test."""
+    os.environ["DATABASE_PATH"] = TEST_DB_PATH
+    # Remove old test db if it exists
+    if os.path.exists(TEST_DB_PATH):
+        os.remove(TEST_DB_PATH)
     init_db()
     yield
-    if os.path.exists("test_expenses.db"):
-        os.remove("test_expenses.db")
+    if os.path.exists(TEST_DB_PATH):
+        os.remove(TEST_DB_PATH)
 
 
 @pytest.fixture

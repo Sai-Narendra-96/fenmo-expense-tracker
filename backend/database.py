@@ -14,12 +14,19 @@ import sqlite3
 import os
 from contextlib import contextmanager
 
-DATABASE_PATH = os.environ.get("DATABASE_PATH", "expenses.db")
+# Default path; can be overridden via DATABASE_PATH env var at any time.
+DEFAULT_DATABASE_PATH = "expenses.db"
+
+
+def _get_db_path() -> str:
+    """Read database path from environment at call time (not import time).
+    This ensures tests and runtime config changes are respected."""
+    return os.environ.get("DATABASE_PATH", DEFAULT_DATABASE_PATH)
 
 
 def get_connection() -> sqlite3.Connection:
     """Create a new database connection with proper settings."""
-    conn = sqlite3.connect(DATABASE_PATH)
+    conn = sqlite3.connect(_get_db_path())
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")  # Better concurrent read performance
     conn.execute("PRAGMA foreign_keys=ON")

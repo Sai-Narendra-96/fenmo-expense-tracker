@@ -61,13 +61,14 @@ export default function App() {
 
   /**
    * Handle new expense submission.
+   * Accepts the idempotency key from the form so double-clicks reuse the same key.
    * Returns true if successful (so the form can reset).
    */
-  async function handleCreateExpense(expenseData) {
+  async function handleCreateExpense(expenseData, idempotencyKey) {
     setIsSubmitting(true);
     setSubmitError(null);
     try {
-      await createExpense(expenseData);
+      await createExpense(expenseData, idempotencyKey);
       // Refresh both filtered and all expenses
       await Promise.all([loadExpenses(), loadAllExpenses()]);
       return true;

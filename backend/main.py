@@ -30,11 +30,14 @@ app = FastAPI(
     description="A minimal, production-ready personal expense tracking API",
 )
 
-# CORS — allow frontend origins
-ALLOWED_ORIGINS = os.environ.get(
-    "ALLOWED_ORIGINS",
-    "http://localhost:5173,http://localhost:3000"
-).split(",")
+# CORS — allow frontend origins (strip whitespace to avoid mis-match)
+ALLOWED_ORIGINS = [
+    o.strip()
+    for o in os.environ.get(
+        "ALLOWED_ORIGINS",
+        "http://localhost:5173,http://localhost:3000"
+    ).split(",")
+]
 
 app.add_middleware(
     CORSMiddleware,

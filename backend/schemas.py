@@ -25,7 +25,7 @@ class ExpenseCreate(BaseModel):
     @field_validator("date")
     @classmethod
     def validate_date(cls, v: str) -> str:
-        """Ensure date is valid and not in the future."""
+        """Ensure date is valid YYYY-MM-DD format."""
         try:
             parsed = date.fromisoformat(v)
         except ValueError:
@@ -46,7 +46,7 @@ class ExpenseCreate(BaseModel):
     @field_validator("category")
     @classmethod
     def validate_category(cls, v: str) -> str:
-        """Normalize category: strip whitespace and capitalize."""
+        """Normalize category: strip leading/trailing whitespace."""
         return v.strip()
 
     def amount_cents(self) -> int:
